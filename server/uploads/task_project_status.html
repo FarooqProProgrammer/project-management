@@ -1,0 +1,157 @@
+
+        <html>
+          <head>
+            <title>Task & Project Status Page</title>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                text-align: center;
+              }
+              h1 {
+                color: #333;
+              }
+              .chart-container {
+                width: 80%;
+                margin: 0 auto;
+              }
+
+              .grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+              }
+
+              .shadow { 
+                box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+              }
+
+              .project-status {
+                margin-top: 30px;
+              }
+
+              /* Download button styling */
+              .download-btn {
+                position: absolute;
+                top: 30px;
+                right: 30px;
+                padding: 10px 20px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                font-size: 16px;
+                border-radius: 5px;
+                cursor: pointer;
+              }
+
+              /* Styling for the task and project charts */
+              #taskStatusChart, #projectStatusChart {
+                width: 90px !important;
+                height: 90px !important;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>Task & Project Status Overview</h1>
+            <p>This page shows the percentage of completed and in-progress tasks, along with the project statuses.</p>
+          
+            <!-- Download Button -->
+            <button class="download-btn" onclick="downloadPDF()">Download PDF</button>
+  
+            <div class="mt-10 grid grid-cols-3" style="display: grid; grid-template-columns: repeat(3, 1fr); padding: 30px;"> 
+              <!-- Task Status Chart -->
+              <div class="chart-container bg-white shadow" style="border-radius:30px; box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;">
+                <canvas id="taskStatusChart" width="130" height="130"></canvas>
+              </div>
+              <!-- Project Status Chart -->
+              <div class="chart-container bg-white shadow" style="border-radius:30px; box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;">
+                <canvas id="projectStatusChart" width="130" height="130"></canvas>
+              </div>
+            </div>
+  
+            <div class="project-status">
+              <h2>Project Status</h2>
+              <p>Total Completed Projects: 0</p>
+              <p>Total Pending Projects: 1</p>
+            </div>
+
+            <script>
+              // Task Status Chart Data
+              const completedTasks = 50;
+              const inProgressTasks = 50;
+      
+              const taskStatusData = {
+                labels: ['Completed', 'In Progress'],
+                datasets: [{
+                  label: 'Task Status',
+                  data: [completedTasks, inProgressTasks],
+                  backgroundColor: ['#36A2EB', '#FFCE56'],
+                  hoverBackgroundColor: ['#1E90FF', '#FFD700'],
+                }]
+              };
+      
+              const taskStatusOptions = {
+                responsive: true,
+                plugins: {
+                  legend: { position: 'top' },
+                  tooltip: {
+                    callbacks: {
+                      label: function(tooltipItem) {
+                        const taskCount = tooltipItem.raw;
+                        return tooltipItem.label + ': ' + taskCount.toFixed(2) + '%';
+                      }
+                    }
+                  }
+                }
+              };
+      
+              const ctx1 = document.getElementById('taskStatusChart').getContext('2d');
+              const taskStatusChart = new Chart(ctx1, {
+                type: 'pie',
+                data: taskStatusData,
+                options: taskStatusOptions
+              });
+  
+              // Project Status Chart Data
+              const completedProjects = 0;
+              const pendingProjects = 1;
+      
+              const projectStatusData = {
+                labels: ['Completed', 'Pending'],
+                datasets: [{
+                  label: 'Project Status',
+                  data: [completedProjects, pendingProjects],
+                  backgroundColor: ['#4CAF50', '#FF5722'],
+                  hoverBackgroundColor: ['#388E3C', '#E64A19'],
+                }]
+              };
+      
+              const projectStatusOptions = {
+                responsive: true,
+                plugins: {
+                  legend: { position: 'top' },
+                  tooltip: {
+                    callbacks: {
+                      label: function(tooltipItem) {
+                        const projectCount = tooltipItem.raw;
+                        return tooltipItem.label + ': ' + projectCount;
+                      }
+                    }
+                  }
+                }
+              };
+      
+              const ctx2 = document.getElementById('projectStatusChart').getContext('2d');
+              const projectStatusChart = new Chart(ctx2, {
+                type: 'pie',
+                data: projectStatusData,
+                options: projectStatusOptions
+              });
+
+              // Download PDF function
+              function downloadPDF() {
+                window.print(); // This triggers the browser's print dialog (Ctrl + P)
+              }
+            </script>
+          </body>
+        </html>
+      

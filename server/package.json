@@ -1,0 +1,42 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "argon2": "^0.41.1",
+    "bcrypt": "^5.1.1",
+    "chalk": "^5.3.0",
+    "concurrently": "^9.1.0",
+    "connect-mongo": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-async-handler": "^1.2.0",
+    "express-session": "^1.18.1",
+    "html-pdf": "^3.0.1",
+    "http-status-codes": "^2.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.4",
+    "mongoose-slug-updater": "^3.3.0",
+    "mongoose-softdelete": "^1.2.0",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "pdf-lib": "^1.17.1",
+    "pdfkit": "^0.15.1",
+    "puppeteer": "^23.10.1",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}

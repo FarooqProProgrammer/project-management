@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Report with Chart</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        canvas {
+            margin-top: 20px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Task Report with Charts</h1>
+    <p>Generated on: <%= generatedOn %></p>
+
+    <h2>Task Summary</h2>
+    <ul>
+        <li>Total Tasks: <%= taskSummary.totalTasks %></li>
+        <li>Completed Tasks: <%= taskSummary.completedTasks %></li>
+        <li>In Progress Tasks: <%= taskSummary.inProgressTasks %></li>
+        <li>Pending Tasks: <%= taskSummary.pendingTasks %></li>
+    </ul>
+
+    <h2>Task Distribution by Assignee</h2>
+    <canvas id="assigneeChart" width="400" height="200"></canvas>
+
+    <!-- Placeholder for chart data -->
+    <div id="chart-data" style="display:none;"></div>
+
+    <h2>Task Details</h2>
+    <table id="taskTable">
+        <thead>
+            <tr>
+                <th>Task Name</th>
+                <th>Assignee</th>
+                <th>Status</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Table rows will be populated dynamically -->
+        </tbody>
+    </table>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js" integrity="sha512-L0Shl7nXXzIlBSUUPpxrokqq4ojqgZFQczTYlGjzONGTDAcLremjwaWv5A+EDLnxhQzY5xUZPWLOLqYRkY0Cbw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script>
+        // Fetch tasks from the API and process the data
+        fetch('/api/tasks')
+            .then(response => response.json())
+            .then(tasks => {
+                // Prepare data for the task summary
+                const taskSummary = {
+                    totalTasks: tasks.length,
+                    completedTasks: tasks.filter(task => task.taskStatus === 'Completed').length,
+                    inProgressTasks: tasks.filter(task => task.taskStatus === 'In Progress').length,
+                    pendingTasks: tasks.filter(task => task.taskStatus === 'Pending').length,
+                };
+
+                // Update the summary in the DOM
+                document.querySelector('ul').innerHTML = `
+                    <li>Total Tasks: ${taskSummary.totalTasks}</li>
+                    <li>Completed Tasks: ${taskSummary.completedTasks}</li>
+                    <li>In Progress Tasks: ${taskSummary.inProgressTasks}</li>
+                    <li>Pending Tasks: ${taskSummary.pendingTasks}</li>
+                `;
+
+                // Prepare data for the chart
+                const chartData = {
+                    labels: tasks.map(task => task.assignee.name), // Assignee names as labels
+                    datasets: [{
+                        label: 'Tasks by Assignee',
+                        data: tasks.reduce((acc, task) => {
+                            const assigneeIndex = acc.findIndex(item => item.assignee === task.assignee.name);
+                            if (assigneeIndex === -1) {
+                                acc.push({ assignee: task.assignee.name, count: 1 });
+                            } else {
+                                acc[assigneeIndex].count += 1;
+                            }
+                            return acc;
+                        }, []).map(item => item.count), // Count of tasks per assignee
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                };
+
+                // Create the chart
+                const ctx = document.getElementById('assigneeChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                            },
+                        },
+                    },
+                });
+
+                // Update the task details table
+                const tableBody = document.querySelector('#taskTable tbody');
+                tasks.forEach(task => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${task.taskName}</td>
+                        <td>${task.assignee.name}</td>
+                        <td>${task.taskStatus}</td>
+                        <td>${task.fromDate}</td>
+                        <td>${task.toDate}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching tasks:', error);
+            });
+    </script>
+
+</body>
+</html>
