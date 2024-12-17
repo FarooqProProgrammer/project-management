@@ -49,6 +49,9 @@ const Projects = () => {
   const [endDate, setEndDate] = useState(""); // State for end date filter
   const [isUpdating, setIsUpdating] = useState(false); // Loading state for update operation
 
+    const [projectTitleFilter, setProjectTitleFilter] = useState(""); // New state for projectTitle filter
+  
+
   const [module, setModule] = useState<string>("")
 
   useEffect(() => {
@@ -187,12 +190,16 @@ const Projects = () => {
     const isWithinEndDate =
       !endDateFilter || taskEndDate <= endDateFilter;
 
+    const matchesProjectTitle =
+      !projectTitleFilter || task?.project?.projectTitle?.toLowerCase().includes(projectTitleFilter.toLowerCase());
+
     return (
       (task?.taskName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task?.taskStatus.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task?.project?.projectTitle.toLowerCase().includes(searchTerm.toLowerCase())) &&
       isWithinStartDate &&
-      isWithinEndDate
+      isWithinEndDate &&
+      matchesProjectTitle // Add project title filter check
     );
   });
 
@@ -287,6 +294,15 @@ const Projects = () => {
 
         </div>
 
+        {/* Project Title Filter */}
+        <Input
+            type="text"
+            placeholder="Filter by Project Title"
+            value={projectTitleFilter}
+            onChange={(e) => setProjectTitleFilter(e.target.value)}
+            className="w-1/3"
+          />
+
         {/* Search Input */}
         <Input
           type="text"
@@ -303,6 +319,8 @@ const Projects = () => {
             <TableHead>Task Name</TableHead>
             <TableHead>Task Status</TableHead>
             <TableHead>Task Module</TableHead>
+            <TableHead>Project</TableHead>
+
 
 
             <TableHead>Comment</TableHead>
@@ -325,8 +343,7 @@ const Projects = () => {
               <TableCell className="font-medium">{item?.taskName}</TableCell>
               <TableCell className="font-medium">{item?.taskStatus}</TableCell>
               <TableCell className="font-medium">{item?.module}</TableCell>
-
-
+              <TableCell className="font-medium">{item?.project?.projectTitle}</TableCell>
 
 
               <TableCell className="font-medium">
