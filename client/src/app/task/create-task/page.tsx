@@ -95,9 +95,9 @@ const CreateTask: React.FC = () => {
 
     return (
         <div className="sm:px-20">
-            <div className="grid lg:grid-cols-4 md:grid-cols-2 grid-cols-1 gap-3">
+            <div className="grid lg:grid-cols-2 md:grid-cols-2 grid-cols-1 gap-3">
                 {/* Task Name */}
-                <div className="grid w-full max-w-sm items-center gap-1.5">
+                <div className="grid w-full max-w-full items-center gap-1.5">
                     <Label>Task Name</Label>
                     <Input
                         type="text"
@@ -108,7 +108,7 @@ const CreateTask: React.FC = () => {
                 </div>
 
                 {/* Module */}
-                <div className="grid w-full max-w-sm items-center gap-1.5">
+                <div className="grid w-full max-w-full items-center gap-1.5">
                     <Label>Module</Label>
                     <Input
                         type="text"
@@ -119,7 +119,7 @@ const CreateTask: React.FC = () => {
                 </div>
 
                 {/* Priority */}
-                <div className="grid w-full max-w-sm items-center gap-1.5">
+                <div className="grid w-full max-w-full items-center gap-1.5">
                     <Label>Priority</Label>
                     <Input
                         type="text"
@@ -130,7 +130,7 @@ const CreateTask: React.FC = () => {
                 </div>
 
                 {/* Task Start Date */}
-                <div className="grid w-full max-w-sm items-center gap-1.5">
+                <div className="grid w-full max-w-full items-center gap-1.5">
                     <Label>Task Start Date</Label>
                     <Input
                         type="date"
@@ -140,7 +140,7 @@ const CreateTask: React.FC = () => {
                 </div>
 
                 {/* Task End Date */}
-                <div className="grid w-full max-w-sm items-center gap-1.5">
+                <div className="grid w-full max-w-full items-center gap-1.5">
                     <Label>Task End Date</Label>
                     <Input
                         type="date"
@@ -150,7 +150,7 @@ const CreateTask: React.FC = () => {
                 </div>
 
                 {/* Task Status */}
-                <div className="grid w-full max-w-sm items-center gap-1.5">
+                <div className="grid w-full max-w-full items-center gap-1.5">
                     <Label>Task Status</Label>
                     <select
                         {...register('taskStatus', { required: 'Task Status is required' })}
@@ -165,7 +165,7 @@ const CreateTask: React.FC = () => {
                 </div>
 
                 {/* Assignee */}
-                <div className="grid w-full max-w-sm items-center gap-1.5">
+                <div className="grid w-full max-w-full items-center gap-1.5">
                     <Label>Assignee</Label>
                     <select
                         {...register('assignee', { required: 'Assignee is required' })}
@@ -182,7 +182,7 @@ const CreateTask: React.FC = () => {
                 </div>
 
                 {/* Project (Optional) */}
-                <div className="grid w-full max-w-sm items-center gap-1.5">
+                <div className="grid w-full max-w-full items-center gap-1.5">
                     <Label>Project</Label>
                     <select {...register('project')}>
                         <option value="">Select Project</option>
@@ -195,7 +195,7 @@ const CreateTask: React.FC = () => {
                 </div>
 
                 {/* Task Description */}
-                <div className="grid w-full max-w-sm items-center gap-1.5">
+                <div className="grid w-full max-w-full items-center gap-1.5">
                     <Label>Task Description</Label>
                     <Textarea
                         {...register('taskDescription', { required: 'Task Description is required' })}
@@ -206,7 +206,7 @@ const CreateTask: React.FC = () => {
                 </div>
 
                 {/* Task Images (Multiple Upload) */}
-                <div className="grid w-full max-w-sm items-center gap-1.5">
+                <div className="grid w-full max-w-full items-center gap-1.5">
                     <Label>Task Images</Label>
                     <Input
                         type="file"

@@ -11,38 +11,35 @@ const taskSchema = new mongoose.Schema(
         taskName: {
             type: String,
             required: true,
-            trim: true,  // Optional: Ensure no leading/trailing spaces in task name
+            trim: true,
         },
         slug: {
             type: String,
             slug: "taskName",
-            unique: true, // Ensures the slug is unique
+            unique: true,
         },
         taskDescription: {
             type: String,
             required: true,
-            trim: true,  // Optional: Trim spaces for description
+            trim: true,
         },
         taskStartDate: {
             type: String,
-            trim: true,  // Optional: Trim spaces for description
+            trim: true,
         },
         taskEndDate: {
             type: String,
-            trim: true,  // Optional: Trim spaces for description
+            trim: true,
         },
-
         module: {
             type: String,
             required: true,
-            trim: true,  // Optional: Trim spaces for description
+            trim: true,
         },
-
         taskStatus: {
             type: String,
             required: true,
-
-            default: 'not started', // Default value
+            default: 'open', // Default value set to "open"
         },
         project: {
             type: mongoose.Schema.Types.ObjectId,
@@ -54,26 +51,36 @@ const taskSchema = new mongoose.Schema(
             ref: "User",
             required: true,
         },
-
         taskImages: [{
-            type: String, // Store the image URL(s)
+            type: String,
         }],
         comments: [{
             userId: {
-              type: mongoose.Schema.Types.ObjectId,
-              ref: "User",
-              required: true,
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+                required: false,
             },
             commentMessage: {
-              type: String,
-              required: true,
-              trim: true,
+                type: String,
+                required: false,
+                trim: true,
             },
             createdAt: {
-              type: Date,
-              default: Date.now,
+                type: Date,
+                default: Date.now,
             },
-          }],
+        }],
+        taskStatusHistory: [{
+            status: {
+                type: String,
+                required: true,
+            },
+            timestamp: {
+                type: Date,
+                required: true,
+                default: Date.now,
+            },
+        }],
     },
     {
         timestamps: true, // Automatically adds createdAt and updatedAt fields

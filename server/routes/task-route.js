@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import path from "path"; // Import path module
-import { createTask, deleteTask, getAllTasks, getTaskById, getTasksByProject, getTasksByStatus, updateTask, updateTaskStatus } from "../controller/task-controller.js";
+import { AddComment, ChangeStatus, createTask, DeleteComment, deleteTask, getAllTasks, getTaskById, getTasksByProject, getTasksByStatus, updateTask, updateTaskStatus } from "../controller/task-controller.js";
 
 const taskRouter = express.Router();
 
@@ -43,5 +43,11 @@ taskRouter.get("/task/:taskId", getTaskById);
 taskRouter.put("/task/:taskId/status", updateTaskStatus);
 taskRouter.get("/project/:projectId", getTasksByProject);
 taskRouter.get('/tasks', getAllTasks);
+
+taskRouter.post("/add-task-comment/:id", AddComment);
+taskRouter.delete("/delete-task-comment/:taskId/:commentId", DeleteComment);
+
+
+taskRouter.post("/change-status/:taskId",ChangeStatus)
 
 export default taskRouter;

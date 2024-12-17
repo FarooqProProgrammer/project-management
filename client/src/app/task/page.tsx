@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { FaDeleteLeft } from "react-icons/fa6";
+
 import {
   Table,
   TableBody,
@@ -22,6 +24,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useDeleteTaskMutation, useGetAllTaskQuery } from "@/store/services/apiSlice";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
+import axios from "axios";
 
 const Projects = () => {
   const router = useRouter();
@@ -39,8 +44,10 @@ const Projects = () => {
   const [endDate, setEndDate] = useState(""); // State for end date filter
   const [isUpdating, setIsUpdating] = useState(false); // Loading state for update operation
 
+  const [module, setModule] = useState<string>("")
+
   useEffect(() => {
-    console.log(data);
+    console.log(data); // Logs task data to inspect its structure
   }, [data]);
 
   const handleDeleteTask = async (id: string) => {
@@ -54,10 +61,13 @@ const Projects = () => {
   };
 
   const handleUpdateTask = (task: any) => {
+    // Ensure the task object contains necessary data
+    console.log("Updating Task:", task); // Debugging line
     setCurrentTask(task);
     setTaskName(task?.taskName || "");
     setTaskStatus(task?.taskStatus || "");
     setProjectTitle(task?.project?.projectTitle || "");
+    setModule(task?.module)
     setTaskDescription(task?.taskDescription || ""); // Set taskDescription
     setCommentMessage(""); // Clear the comment message when opening the update modal
     setUpdateResponse(null);
@@ -70,17 +80,11 @@ const Projects = () => {
         taskName,
         taskStatus,
         projectTitle,
+        module,
         taskDescription, // Add taskDescription here
-        userId: currentTask?.assignee,
-        comments: [
-          ...(currentTask?.comments || []), // Ensure comments is an array, even if it's undefined
-          {
-            userId: currentTask?.assignee, // Assuming assignee is the user posting the comment
-            commentMessage,
-          },
-        ],
+        userId: currentTask?.assignee, // Ensure assignee is available
       };
-  
+
       // Send a PUT request to the custom route
       const response = await fetch(`http://localhost:3001/api/update-task/${currentTask?._id}`, {
         method: "PUT",
@@ -89,7 +93,7 @@ const Projects = () => {
         },
         body: JSON.stringify(updatedTask),
       });
-  
+
       if (response.ok) {
         const result = await response.json();
         setUpdateResponse("Task updated successfully!");
@@ -105,7 +109,34 @@ const Projects = () => {
       setIsUpdating(false); // End loading, whether success or failure
     }
   };
-  
+
+  // Function to handle adding a comment
+  const handleAddComment = async (taskId: string, userId: string) => {
+    if (!commentMessage.trim()) {
+      console.log("Comment is empty");
+      return;
+    }
+
+    try {
+      const commentData = {
+
+        userId: userId, // Ensure userId is available
+        commentMessage,
+      };
+
+      const response = await axios.post(`http://localhost:3001/api/add-task-comment/${taskId}`, commentData);
+
+      if (response.status === 200) {
+        console.log("Comment added successfully");
+        refetch();
+      }
+
+
+
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    }
+  };
 
   // Filter tasks based on search term and date range
   const filteredTasks = data?.filter((task) => {
@@ -128,6 +159,50 @@ const Projects = () => {
     );
   });
 
+
+  // Function to handle deleting a comment
+  const handleDeleteTaskComment = async (taskId: string, commentId: string) => {
+    try {
+      // Make a DELETE request to the server
+      const response = await axios.delete(
+        `http://localhost:3001/api/delete-task-comment/${commentId}/${taskId}`
+      );
+
+      if (response.status === 200) {
+        console.log("Comment deleted successfully");
+        refetch(); // Refetch data to update the UI
+      } else {
+        console.error("Failed to delete comment");
+      }
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+    }
+  };
+
+
+  const [changeStatus, setChangeStatus] = useState<string>("")
+
+
+  const HandleChangeStatus = async (id: string) => {
+    console.log({ id, changeStatus })
+
+
+    try {
+      
+      const  response = await axios.post(`http://localhost:3001/api/change-status/${id}`, { status: changeStatus })
+
+      console.log(response.data)
+
+
+    } catch (error) {
+      
+    }
+
+  }
+
+
+
+
   return (
     <section className="sm:px-20 space-y-4">
       <div className="flex justify-between items-center">
@@ -149,10 +224,10 @@ const Projects = () => {
           <TableRow>
             <TableHead>Task Name</TableHead>
             <TableHead>Task Status</TableHead>
-            <TableHead>Project</TableHead>
-            <TableHead>Start Date</TableHead>
-            <TableHead>End Date</TableHead>
+
             <TableHead>Actions</TableHead>
+            <TableHead>Comment</TableHead>
+            <TableHead>Ticket History</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -160,9 +235,7 @@ const Projects = () => {
             <TableRow key={index}>
               <TableCell className="font-medium">{item?.taskName}</TableCell>
               <TableCell className="font-medium">{item?.taskStatus}</TableCell>
-              <TableCell className="font-medium">{item?.project?.projectTitle}</TableCell>
-              <TableCell className="font-medium">{item?.taskStartDate}</TableCell>
-              <TableCell className="font-medium">{item?.taskEndDate}</TableCell>
+
               <TableCell className="font-medium flex justify-center items-center">
                 <div className="flex justify-center items-center gap-5">
                   <Trash2 className="cursor-pointer" onClick={() => handleDeleteTask(item?._id)} />
@@ -186,13 +259,17 @@ const Projects = () => {
                           </div>
                           <div className="grid w-full max-w-sm items-center gap-1.5 mt-3">
                             <Label htmlFor="taskStatus">Task Status</Label>
-                            <Input
-                              type="text"
+                            <select
                               id="taskStatus"
-                              placeholder="Task Status"
                               value={taskStatus}
-                              onChange={(e) => setTaskStatus(e.target.value)}
-                            />
+                              onChange={(e) => setTaskStatus(e.target.value)} // Update taskStatus state
+                              className="w-full p-2 border rounded-md"
+                            >
+                              <option value="">Select Status</option>
+                              <option defaultChecked={item?.taskStatus === 'Not Started'} value="Not Started">Not Started</option>
+                              <option defaultChecked={item?.taskStatus === 'In Progress'} value="In Progress">In Progress</option>
+                              <option defaultChecked={item?.taskStatus === 'Completed'} value="Completed">Completed</option>
+                            </select>
                           </div>
                           <div className="grid w-full max-w-sm items-center gap-1.5 mt-3">
                             <Label htmlFor="projectTitle">Project Title</Label>
@@ -205,6 +282,18 @@ const Projects = () => {
                             />
                           </div>
                           <div className="grid w-full max-w-sm items-center gap-1.5 mt-3">
+                            <Label htmlFor="projectTitle">module</Label>
+                            <Input
+                              type="text"
+                              id="module"
+                              placeholder="module"
+                              value={module}
+                              onChange={(e) => setModule(e.target.value)}
+                            />
+                          </div>
+
+
+                          <div className="grid w-full max-w-sm items-center gap-1.5 mt-3">
                             <Label htmlFor="taskDescription">Task Description</Label>
                             <textarea
                               id="taskDescription"
@@ -215,17 +304,7 @@ const Projects = () => {
                             />
                           </div>
 
-                          {/* Comment Section */}
-                          <div className="mt-4">
-                            <Label htmlFor="commentMessage">Add Comment</Label>
-                            <textarea
-                              id="commentMessage"
-                              placeholder="Add a comment"
-                              value={commentMessage}
-                              onChange={(e) => setCommentMessage(e.target.value)}
-                              className="w-full p-2 border rounded-md mt-2"
-                            />
-                          </div>
+
 
                           <Button
                             className="mt-4"
@@ -244,6 +323,77 @@ const Projects = () => {
                     </DialogContent>
                   </Dialog>
                 </div>
+              </TableCell>
+
+
+
+
+              <TableCell className="font-medium">
+                <Sheet>
+                  <SheetTrigger>Comment</SheetTrigger>
+                  <SheetContent className="w-[400px] sm:w-[540px]">
+                    <SheetHeader>
+                      <SheetTitle>Add Comment on Task</SheetTitle>
+                      <SheetDescription className="space-y-3">
+                        <input value={item?._id} hidden placeholder="TaskId" />
+                        <input value={item?.assignee?._id} hidden placeholder="UserId" />
+                        <Textarea
+                          value={commentMessage}
+                          onChange={(e) => setCommentMessage(e.target.value)}
+                          placeholder="Add a comment"
+                        />
+                        <Button
+                          onClick={() => handleAddComment(item?._id, item?.assignee?._id)} // Pass taskId and userId
+                        >
+                          Submit
+                        </Button>
+
+
+                        <h5 className="mt-5 text-xl font-bold text-black">All Comments</h5>
+                        <div className="mt-5">
+                          {item?.comments?.map((comment, index) => {
+                            return (
+
+                              <div className="my-3 relative w-full border cursor-pointer flex justify-between items-center border-gray-400 p-3 rounded-md">
+                                <p>{comment?.commentMessage}</p>
+                                <p>{comment?.userId?.username}</p>
+                                <div onClick={() => handleDeleteTaskComment(comment?._id, item?._id)} className="absolute flex justify-center items-center rounded-md -top-2 -right-0 w-[20px] h-[20px] border-2 border-gray-500">
+                                  <FaDeleteLeft size={10} />
+                                </div>
+                              </div>
+
+
+                            )
+                          })}
+                        </div>
+                      </SheetDescription>
+                    </SheetHeader>
+                  </SheetContent>
+                </Sheet>
+              </TableCell>
+
+              <TableCell>
+                <Sheet>
+                  <SheetTrigger>Open</SheetTrigger>
+                  <SheetContent>
+                    <SheetHeader>
+                      <SheetTitle>Task History</SheetTitle>
+                      <SheetDescription className="space-y-3">
+
+                        <select onChange={(e) => setChangeStatus(e.target.value)}>
+                          <option value="open">Open</option>
+                          <option value="closed">Closed</option>
+                        </select>
+
+                        <Button onClick={() => HandleChangeStatus(item?._id)}>Change Status</Button>
+
+
+
+                      </SheetDescription>
+                    </SheetHeader>
+                  </SheetContent>
+                </Sheet>
+
               </TableCell>
             </TableRow>
           ))}

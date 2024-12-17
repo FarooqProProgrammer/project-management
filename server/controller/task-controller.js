@@ -8,26 +8,25 @@ import multer from "multer";
 // Create a new task
 export const createTask = async (req, res) => {
     try {
-
-        console.log(req.body)
-
-        
         const { taskName, taskStartDate, taskEndDate, taskDescription, module, taskStatus, project, assignee } = req.body;
 
         // Collect image URLs if files are uploaded
         const taskImages = req.files ? req.files.map(file => `/uploads/task_images/${file.filename}`) : [];
 
-        // Create new task with the provided details and uploaded images
+        // Create new task with default status as 'open'
         const newTask = new Task({
             taskName,
             taskDescription,
-            taskStatus,
+            taskStatus: taskStatus || 'open', // Default "open" if not provided
             project,
             assignee,
             module,
             taskStartDate,
             taskEndDate,
             taskImages,
+            taskStatusHistory: [
+                { status: 'open', timestamp: new Date() } // Add the first status change to "open"
+            ]
         });
 
         await newTask.save();
@@ -37,8 +36,6 @@ export const createTask = async (req, res) => {
             message: "Task created successfully!",
             task: newTask,
         });
-        // Use multer middleware to handle file uploads
-       
     } catch (error) {
         console.error(error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -51,50 +48,41 @@ export const createTask = async (req, res) => {
 
 export const updateTask = async (req, res) => {
     try {
-      const { taskId } = req.params; // Extract taskId from URL params
-      const { taskName, taskStatus, taskDescription, taskStartDate, taskEndDate, project, assignee,userId, comments } = req.body; // Extract values from request body
-  
-      // Find the task by taskId
-      const task = await Task.findById(taskId);
-      if (!task) {
-        return res.status(404).json({ message: "Task not found" });
-      }
-  
-      // Update task fields
-      if (taskName) task.taskName = taskName;
-      if (taskStatus) task.taskStatus = taskStatus;
-      if (taskDescription) task.taskDescription = taskDescription;
-      if (taskStartDate) task.taskStartDate = taskStartDate;
-      if (taskEndDate) task.taskEndDate = taskEndDate;
-      if (project) task.project = project;
-      if (assignee) task.assignee = assignee;
-      if (userId) task.userId = userId;
-  
-      // If there are new comments, push them into the comments array
-      if (comments && comments.length > 0) {
-        // Loop through comments and add them to the task
-        for (const comment of comments) {
-          task.comments.push({
-            userId: comment.userId,
-            commentMessage: comment.commentMessage,
-          });
+        const { taskId } = req.params; // Extract taskId from URL params
+        const { taskName, taskStatus, taskDescription, module, taskStartDate, taskEndDate, project, assignee, userId } = req.body; // Extract values from request body
+
+        // Find the task by taskId
+        const task = await Task.findById(taskId);
+        if (!task) {
+            return res.status(404).json({ message: "Task not found" });
         }
-      }
-  
-      // Save the updated task
-      const updatedTask = await task.save();
-  
-      // Return the updated task
-      res.status(200).json({
-        message: "Task updated successfully!",
-        task: updatedTask,
-      });
+
+        // Update task fields
+        if (taskName) task.taskName = taskName;
+        if (taskStatus) task.taskStatus = taskStatus;
+        if (taskDescription) task.taskDescription = taskDescription;
+        if (taskStartDate) task.taskStartDate = taskStartDate;
+        if (taskEndDate) task.taskEndDate = taskEndDate;
+        if (project) task.project = project;
+        if (assignee) task.assignee = assignee;
+        if (userId) task.userId = userId;
+        if (module) task.module = module;
+
+
+        // Save the updated task
+        const updatedTask = await task.save();
+
+        // Return the updated task
+        res.status(200).json({
+            message: "Task updated successfully!",
+            task: updatedTask,
+        });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error", error: error.message });
+        console.error(error);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
-  };
-  
+};
+
 
 // Get tasks by status
 export const getTasksByStatus = async (req, res) => {
@@ -118,7 +106,7 @@ export const getTasksByStatus = async (req, res) => {
 export const getAllTasks = async (req, res) => {
     try {
         // Fetch all tasks from the database
-        const tasks = await Task.find().populate("assignee").populate("project");
+        const tasks = await Task.find().populate("assignee").populate("project").populate("comments.userId");
 
         if (tasks.length === 0) {
             return res.status(404).json({ message: "No tasks found." });
@@ -212,3 +200,166 @@ export const deleteTask = async (req, res) => {
         res.status(500).json({ message: "Server error, unable to delete task." });
     }
 };
+
+export const AddComment = async (req, res) => {
+    try {
+        // Extract task ID and comment data from the request
+        const { id } = req.params;
+        const { userId, commentMessage } = req.body;
+
+        // Check if all required fields are present
+        if (!userId || !commentMessage || !id) {
+            return res.status(400).json({ error: "Missing required fields: userId, commentMessage, or id" });
+        }
+
+        // Update the task with the new comment
+        const result = await Task.updateOne(
+            { _id: id },
+            {
+                $push: {
+                    comments: { userId, commentMessage, createdAt: new Date() }, // Add createdAt for tracking time of comment
+                },
+            }
+        );
+
+        // Check if the update was successful
+        if (result.nModified === 0) {
+            return res.status(404).json({ error: "Task not found or comment not added" });
+        }
+
+        // Return success response
+        return res.status(200).json({ message: "Comment added successfully" });
+    } catch (error) {
+        console.error("Error adding comment:", error);
+        return res.status(500).json({ error: "Server error" });
+    }
+};
+
+
+// Controller to delete a comment from a task
+export const DeleteComment = async (req, res) => {
+    try {
+        const { taskId, commentId } = req.params;
+
+        // Ensure both taskId and commentId are provided
+        if (!taskId || !commentId) {
+            return res.status(400).json({ error: "Missing taskId or commentId" });
+        }
+
+        // Find the task by ID and remove the comment with the given commentId
+        const task = await Task.findOneAndUpdate(
+            { _id: taskId },
+            {
+                $pull: { comments: { _id: commentId } }, // Pull (remove) the comment with the specific _id
+            },
+            { new: true } // Return the updated task
+        );
+
+        // If the task was not found or the comment doesn't exist
+        if (!task) {
+            return res.status(404).json({ error: "Task or comment not found" });
+        }
+
+        // Return success response
+        return res.status(200).json({ message: "Comment deleted successfully", task });
+    } catch (error) {
+        console.error("Error deleting comment:", error);
+        return res.status(500).json({ error: "Server error" });
+    }
+};
+
+
+export const openTask = async (req, res) => {
+    try {
+        const { taskId } = req.params;
+
+        const task = await Task.findById(taskId);
+
+        if (!task) {
+            return res.status(404).json({ message: "Task not found." });
+        }
+
+        // Add a new entry to the status history for 'open'
+        task.taskStatus = 'open';
+        task.taskStatusHistory.push({ status: 'open', timestamp: new Date() });
+
+        await task.save();
+
+        res.status(200).json({
+            message: "Task status updated to 'open' successfully!",
+            task,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error, unable to open task." });
+    }
+};
+
+
+export const closeTask = async (req, res) => {
+    try {
+        const { taskId } = req.params;
+
+        const task = await Task.findById(taskId);
+
+        if (!task) {
+            return res.status(404).json({ message: "Task not found." });
+        }
+
+        // Add a new entry to the status history for 'closed'
+        task.taskStatus = 'closed';
+        task.taskStatusHistory.push({ status: 'closed', timestamp: new Date() });
+
+        await task.save();
+
+        res.status(200).json({
+            message: "Task status updated to 'closed' successfully!",
+            task,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error, unable to close task." });
+    }
+};
+
+
+
+export const ChangeStatus = async (req, res) => {
+    try {
+      const { taskId } = req.params; // Extract taskId from request params
+      const { taskMessage } = req.body; // Extract taskMessage (new status) from request body
+  
+      if (!taskMessage) {
+        return res.status(400).json({ error: 'Task message (status) is required' });
+      }
+  
+      // Update task status and track the change in taskStatusHistory
+      const result = await Task.updateOne(
+        { _id: taskId }, // Find task by taskId
+        {
+          $push: {
+            taskStatusHistory: {
+              status: taskMessage, // Add the new status to taskStatusHistory
+              timestamp: new Date(), // Add timestamp to track when status was changed
+            },
+          },
+        }
+      );
+  
+      // If the task wasn't found or updated
+      if (result.modifiedCount === 0) {
+        return res.status(404).json({ error: 'Task not found or status not changed' });
+      }
+  
+      // Respond with the updated task status history
+      const updatedTask = await Task.findById(taskId); // Retrieve the updated task
+      return res.status(200).json({
+        message: 'Task status updated successfully',
+        taskStatusHistory: updatedTask.taskStatusHistory, // Send the updated task status history
+      });
+    } catch (error) {
+      // Handle errors
+      console.error(error);
+      return res.status(500).json({ error: 'An error occurred while updating the task status' });
+    }
+  };
