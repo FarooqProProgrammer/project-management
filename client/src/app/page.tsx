@@ -30,71 +30,99 @@ import Currency from "@/components/currancy";
 import { useGetAllProductsQuery, useGetAllTaskQuery, useGetProjectCountsQuery, useGetTotalCountsQuery, useLazyGetReportQuery, useLazyGetSummaryReportQuery } from "@/store/services/apiSlice";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
+import dynamic from "next/dynamic";
+
+const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
+
+
 
 export default function Dashboard() {
-
   const [triggerGetReport] = useLazyGetReportQuery();
-
   const [triggerSummary] = useLazyGetSummaryReportQuery();
-
-
   const { data, isLoading } = useGetTotalCountsQuery();
   const { data: projectData, isLoading: projectLoading } = useGetAllProductsQuery();
+  const { data: taskData } = useGetAllTaskQuery();
 
-
-  const { data: taskData } = useGetAllTaskQuery()
-
+  const [month, setMonth] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log(taskData)
-  }, [taskData])
+    setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+  }, []);
 
+  
 
+  // Handle empty taskData or incorrect structure
+  const prepareChartData = () => {
+    const monthlyTaskCounts: Record<string, number> = {};
 
+    if (Array.isArray(taskData)) {
+      taskData.forEach((task) => {
+        if (task?.createdAt) {
+          const createdAt = new Date(task.createdAt);
+          const month = createdAt.toLocaleString("default", { month: "long", year: "numeric" });
+          monthlyTaskCounts[month] = (monthlyTaskCounts[month] || 0) + 1;
+        }
+      });
+    }
 
-  const [month, setMonth] = useState<string | null>(null)
-  const [endDate, setEndDate] = useState<string | null>(null)
+    const categories = Object.keys(monthlyTaskCounts);
+    const seriesData = Object.values(monthlyTaskCounts);
 
+    return { categories, seriesData };
+  };
 
+  const { categories, seriesData } = prepareChartData();
+
+  const chartOptions = {
+    chart: {
+      type: "bar",
+      height: 350,
+    },
+    xaxis: {
+      categories: categories.length > 0 ? categories : ['No Data'],
+    },
+    title: {
+      text: "Task Count Per Month",
+      align: "center",
+    },
+  };
+
+  const chartSeries = [
+    {
+      name: "Tasks",
+      data:   seriesData.length > 0 ? seriesData : [] ?? [],
+    },
+  ];
 
   const handleDownloadReport = async () => {
     try {
-
       if (!month || !endDate) {
         console.error("Please select a month.");
         return;
       }
 
-
-
-      // Make the API call to fetch the report
       const response = await triggerGetReport({ month, endDate }).unwrap();
-      console.log(response.fileUrl); // Ensure that the fileUrl is present in the response
+      console.log(response.fileUrl);
 
-      // Create an anchor element
-      const a = document.createElement('a');
-      a.href = response.fileUrl; // Set the href to the URL received from the response
-      a.target = '_blank'; // Open the link in a new tab
-      a.click(); // Simulate a click to open the link
-
+      const a = document.createElement("a");
+      a.href = response.fileUrl;
+      a.target = "_blank";
+      a.click();
     } catch (error) {
       console.error("Error downloading the report:", error);
     }
   };
 
-
-
-
   const handleDownloadSummary = async () => {
     try {
-      // Fetch the report summary
       const reportSummary = await triggerSummary().unwrap();
-  
       if (reportSummary.fileUrl) {
-        console.log(reportSummary.fileUrl); // Log the fileUrl for debugging
-  
-        // Open the fileUrl in another page
-        window.open(reportSummary.fileUrl, '_blank');
+        console.log(reportSummary.fileUrl);
+        window.open(reportSummary.fileUrl, "_blank");
       } else {
         console.error("No file URL received in the response.");
       }
@@ -102,14 +130,24 @@ export default function Dashboard() {
       console.error("Error fetching the summary:", error);
     }
   };
-  
 
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen flex justify-center items-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
+    
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="flex sm:max-w-lg justify-start items-center gap-4">
         <Input type="date" onChange={(e) => setMonth(e.target.value)} />
-        <Input type="date" onChange={(e) => setEndDate(e.target.value)} />
+        <Input type="date"  value={endDate || ""} onChange={(e) => {
+          
+          setEndDate(e.target.value)
+        }} />
         <Button onClick={handleDownloadReport}>Download Report</Button>
         <Button onClick={handleDownloadSummary}>Download Summary</Button>
       </div>
@@ -242,6 +280,23 @@ export default function Dashboard() {
             }
           </CardContent>
         </Card>
+
+        <div className="grid gap-4 col-span-3 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
+        <Card className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle>Task Count Per Month</CardTitle>
+            <CardDescription>Monthly task statistics</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ApexChart
+              options={chartOptions}
+              series={chartSeries}
+              type="bar"
+              height={350}
+            />
+          </CardContent>
+        </Card>
+      </div>
       </div>
     </main>
   );

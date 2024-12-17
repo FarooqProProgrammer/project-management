@@ -29,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
 import moment from "moment"
 import { CSVLink, CSVDownload } from "react-csv";
+import * as XLSX from 'xlsx'; // Import xlsx library
 
 
 const Projects = () => {
@@ -75,6 +76,38 @@ const Projects = () => {
     setCommentMessage(""); // Clear the comment message when opening the update modal
     setUpdateResponse(null);
   };
+
+
+  const exportToExcel = (data) => {
+    console.log(data);
+
+    let flatData = [];
+
+    // Iterate over each task
+    data.forEach((task) => {
+      // Iterate over taskStatusHistory
+      task.taskStatusHistory.forEach((status) => {
+        // Create a new object with taskName and status details
+        flatData.push({
+          taskName: task.taskName,
+          status: status.status,
+          timestamp: status.timestamp,
+        });
+      });
+    });
+
+    // Log the flattened data (for debugging purposes)
+    console.log(flatData);
+
+    // Create a worksheet from the flattened data
+    const ws = XLSX.utils.json_to_sheet(flatData);
+    const wb = XLSX.utils.book_new(); // Create a new workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Task History'); // Append the worksheet to the workbook
+
+    // Generate Excel file and download it
+    XLSX.writeFile(wb, 'task_history.xlsx');
+  };
+
 
   const handleSubmitUpdate = async () => {
     try {
@@ -163,6 +196,10 @@ const Projects = () => {
   });
 
 
+
+
+
+
   // Function to handle deleting a comment
   const handleDeleteTaskComment = async (taskId: string, commentId: string) => {
     try {
@@ -196,6 +233,8 @@ const Projects = () => {
 
       console.log(response.data)
 
+      refetch()
+
 
     } catch (error) {
 
@@ -205,12 +244,47 @@ const Projects = () => {
 
 
 
+  const HandleDownloadData = () => {
+    console.log(filteredTasks);
+
+    // Flatten the data structure
+    let flatData = [];
+
+    filteredTasks.forEach((task) => {
+      // Iterate over each status in the task's taskStatusHistory
+      task.taskStatusHistory.forEach((status) => {
+        // Push each status with task name, status, and timestamps
+        flatData.push({
+          taskName: task.taskName,
+          status: status.status,
+          formattedTimestamp: moment(status.timestamp).format('dddd, MMMM Do YYYY'), // Formatted timestamp
+          rawTimestamp: status.timestamp, // Raw timestamp
+        });
+      });
+    });
+
+    // Log the flattened data to check if it's correct
+    console.log(flatData);
+
+    // Create a worksheet from the flattened data
+    const ws = XLSX.utils.json_to_sheet(flatData);
+    const wb = XLSX.utils.book_new(); // Create a new workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Task History'); // Append the worksheet to the workbook
+
+    // Generate Excel file and trigger download
+    XLSX.writeFile(wb, 'task_history.xlsx');
+  };
+
 
   return (
     <section className="sm:px-20 space-y-4">
       <div className="flex justify-between items-center">
         {/* Create Task Button */}
-        <Button onClick={() => router.push("/task/create-task")}>Create Task</Button>
+        <div className="flex justify-center items-center gap-3">
+          <Button onClick={() => router.push("/task/create-task")}>Create Task</Button>
+          <Button onClick={HandleDownloadData}>Download Task</Button>
+          
+        </div>
 
         {/* Search Input */}
         <Input
@@ -233,6 +307,8 @@ const Projects = () => {
             <TableHead>Ticket History</TableHead>
           </TableRow>
         </TableHeader>
+
+
         <TableBody>
           {filteredTasks?.map((item, index) => (
             <TableRow key={index}>
@@ -265,7 +341,7 @@ const Projects = () => {
                             <select
                               id="taskStatus"
                               value={taskStatus}
-                              onChange={(e) => setTaskStatus(e.target.value)} // Update taskStatus state
+                              onChange={(e) => setTaskStatus(e.target.value)}
                               className="w-full p-2 border rounded-md"
                             >
                               <option value="">Select Status</option>
@@ -285,34 +361,30 @@ const Projects = () => {
                             />
                           </div>
                           <div className="grid w-full max-w-sm items-center gap-1.5 mt-3">
-                            <Label htmlFor="projectTitle">module</Label>
+                            <Label htmlFor="module">Module</Label>
                             <Input
                               type="text"
                               id="module"
-                              placeholder="module"
+                              placeholder="Module"
                               value={module}
                               onChange={(e) => setModule(e.target.value)}
                             />
                           </div>
-
-
                           <div className="grid w-full max-w-sm items-center gap-1.5 mt-3">
                             <Label htmlFor="taskDescription">Task Description</Label>
                             <textarea
                               id="taskDescription"
                               placeholder="Task Description"
                               value={taskDescription}
-                              onChange={(e) => setTaskDescription(e.target.value)} // Handle change for description
+                              onChange={(e) => setTaskDescription(e.target.value)}
                               className="w-full p-2 border rounded-md"
                             />
                           </div>
 
-
-
                           <Button
                             className="mt-4"
                             onClick={handleSubmitUpdate}
-                            disabled={isUpdating} // Disable button while updating
+                            disabled={isUpdating}
                           >
                             {isUpdating ? "Updating..." : "Submit"}
                           </Button>
@@ -327,9 +399,6 @@ const Projects = () => {
                   </Dialog>
                 </div>
               </TableCell>
-
-
-
 
               <TableCell className="font-medium">
                 <Sheet>
@@ -346,26 +415,22 @@ const Projects = () => {
                           placeholder="Add a comment"
                         />
                         <Button
-                          onClick={() => handleAddComment(item?._id, item?.assignee?._id)} // Pass taskId and userId
+                          onClick={() => handleAddComment(item?._id, item?.assignee?._id)}
                         >
                           Submit
                         </Button>
-
 
                         <h5 className="mt-5 text-xl font-bold text-black">All Comments</h5>
                         <div className="mt-5">
                           {item?.comments?.map((comment, index) => {
                             return (
-
-                              <div className="my-3 relative w-full border cursor-pointer flex justify-between items-center border-gray-400 p-3 rounded-md">
+                              <div className="my-3 relative w-full border cursor-pointer flex justify-between items-center border-gray-400 p-3 rounded-md" key={index}>
                                 <p>{comment?.commentMessage}</p>
                                 <p>{comment?.userId?.username}</p>
                                 <div onClick={() => handleDeleteTaskComment(comment?._id, item?._id)} className="absolute flex justify-center items-center rounded-md -top-2 -right-0 w-[20px] h-[20px] border-2 border-gray-500">
                                   <FaDeleteLeft size={10} />
                                 </div>
                               </div>
-
-
                             )
                           })}
                         </div>
@@ -382,10 +447,9 @@ const Projects = () => {
                     <SheetHeader>
                       <SheetTitle>Task History</SheetTitle>
                       <SheetDescription className="space-y-3">
-
                         <select onChange={(e) => setChangeStatus(e.target.value)}>
-                          <option value="open">Open</option>
-                          <option value="closed">Closed</option>
+                          <option value="open" defaultChecked={item?.taskStatusHistory.slice(-1)[0]?.status?.toLowerCase() === "open"}>Open</option>
+                          <option value="closed" defaultChecked={item?.taskStatusHistory.slice(-1)[0]?.status?.toLowerCase() === "open"}>Closed</option>
                         </select>
 
                         <Button onClick={() => HandleChangeStatus(item?._id)}>Change Status</Button>
@@ -393,8 +457,18 @@ const Projects = () => {
                         <div className="mt-4">
                           <h5 className="text-xl mb-3 text-black font-bold">Task History</h5>
 
-                          <CSVDownload data={item?.taskStatusHistory} target="_blank" />
-
+                          <Button
+                            className="mt-2"
+                            onClick={() => exportToExcel([{
+                              taskName: item?.taskName,
+                              taskStatusHistory: item?.taskStatusHistory?.map(status => ({
+                                status: status?.status,
+                                timestamp: moment(status?.timestamp).format('dddd, MMMM Do YYYY'),
+                              }))
+                            }])}
+                          >
+                            Download as Excel
+                          </Button>
                           {item?.taskStatusHistory?.map((status, index) => {
                             return (
                               <div className="flex justify-between items-center my-3" key={index}>
@@ -404,14 +478,10 @@ const Projects = () => {
                             );
                           })}
                         </div>
-
-
-
                       </SheetDescription>
                     </SheetHeader>
                   </SheetContent>
                 </Sheet>
-
               </TableCell>
             </TableRow>
           ))}
