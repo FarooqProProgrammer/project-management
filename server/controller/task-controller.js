@@ -8,10 +8,12 @@ import multer from "multer";
 // Create a new task
 export const createTask = async (req, res) => {
     try {
-        const { taskName, taskStartDate, taskEndDate, taskDescription, module, taskStatus, project, assignee } = req.body;
+        const { taskName, taskStartDate,taskImages, taskEndDate, taskDescription, module, taskStatus, project, assignee } = req.body;
 
         // Collect image URLs if files are uploaded
-        const taskImages = req.files ? req.files.map(file => `/uploads/task_images/${file.filename}`) : [];
+
+        console.log(req.body)
+       
 
         // Create new task with default status as 'open'
         const newTask = new Task({
@@ -44,7 +46,6 @@ export const createTask = async (req, res) => {
         });
     }
 };
-
 
 export const updateTask = async (req, res) => {
     try {
@@ -124,7 +125,7 @@ export const getAllTasks = async (req, res) => {
 export const getTaskById = async (req, res) => {
     try {
         const { taskId } = req.params;
-        const task = await Task.findById(taskId);
+        const task = await Task.findById(taskId).populate("assignee").populate("project");
 
         if (!task) {
             return res.status(404).json({ message: "Task not found." });

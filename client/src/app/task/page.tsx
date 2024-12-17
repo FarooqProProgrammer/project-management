@@ -30,6 +30,7 @@ import axios from "axios";
 import moment from "moment"
 import { CSVLink, CSVDownload } from "react-csv";
 import * as XLSX from 'xlsx'; // Import xlsx library
+import Link from "next/link";
 
 
 const Projects = () => {
@@ -283,7 +284,7 @@ const Projects = () => {
         <div className="flex justify-center items-center gap-3">
           <Button onClick={() => router.push("/task/create-task")}>Create Task</Button>
           <Button onClick={HandleDownloadData}>Download Task</Button>
-          
+
         </div>
 
         {/* Search Input */}
@@ -301,22 +302,134 @@ const Projects = () => {
           <TableRow>
             <TableHead>Task Name</TableHead>
             <TableHead>Task Status</TableHead>
+            <TableHead>Task Module</TableHead>
 
-            <TableHead>Actions</TableHead>
+
             <TableHead>Comment</TableHead>
             <TableHead>Ticket History</TableHead>
+            <TableHead>View Ticket</TableHead>
+
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
 
 
         <TableBody>
           {filteredTasks?.map((item, index) => (
-            <TableRow key={index}>
+            <TableRow
+              key={index}
+
+
+
+            >
               <TableCell className="font-medium">{item?.taskName}</TableCell>
               <TableCell className="font-medium">{item?.taskStatus}</TableCell>
+              <TableCell className="font-medium">{item?.module}</TableCell>
 
-              <TableCell className="font-medium flex justify-center items-center">
-                <div className="flex justify-center items-center gap-5">
+
+
+
+              <TableCell className="font-medium">
+                <Sheet>
+                  <SheetTrigger>Comment</SheetTrigger>
+                  <SheetContent className="w-[400px] sm:w-[540px]">
+                    <SheetHeader>
+                      <SheetTitle>Add Comment on Task</SheetTitle>
+                      <SheetDescription className="space-y-3">
+                        <input value={item?._id} hidden placeholder="TaskId" />
+                        <input value={item?.assignee?._id} hidden placeholder="UserId" />
+                        <Textarea
+                          value={commentMessage}
+                          onChange={(e) => setCommentMessage(e.target.value)}
+                          placeholder="Add a comment"
+                        />
+                        <Button
+                          onClick={() => handleAddComment(item?._id, item?.assignee?._id)}
+                        >
+                          Submit
+                        </Button>
+
+                        <h5 className="mt-5 text-xl font-bold text-black">All Comments</h5>
+                        <div className="mt-5">
+                          {item?.comments?.map((comment, index) => {
+                            return (
+                              <div className="my-3 relative w-full border cursor-pointer flex justify-between items-center border-gray-400 p-3 rounded-md" key={index}>
+                                <p>{comment?.commentMessage}</p>
+                                <p>{comment?.userId?.username}</p>
+                                <div onClick={() => handleDeleteTaskComment(comment?._id, item?._id)} className="absolute flex justify-center items-center rounded-md -top-2 -right-0 w-[20px] h-[20px] border-2 border-gray-500">
+                                  <FaDeleteLeft size={10} />
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </SheetDescription>
+                    </SheetHeader>
+                  </SheetContent>
+                </Sheet>
+              </TableCell>
+
+              <TableCell>
+                <Sheet>
+                  <SheetTrigger>
+                    <h5
+                      style={{
+                        backgroundColor: item?.taskStatusHistory[item?.taskStatusHistory.length - 1]?.status === 'closed'
+                          ? 'rgba(255, 0, 0, 0.3)'  // Red with 50% opacity
+                          : 'rgba(0, 128, 0, 0.3)', // Green with 50% opacity
+                      }}
+                      className="p-3 rounded-md"
+                    >
+                      {item?.taskStatusHistory[item?.taskStatusHistory.length - 1]?.status}
+
+                    </h5>
+                  </SheetTrigger>
+                  <SheetContent>
+                    <SheetHeader>
+                      <SheetTitle>Task History</SheetTitle>
+                      <SheetDescription className="space-y-3">
+                        <select onChange={(e) => setChangeStatus(e.target.value)}>
+                          <option value="open" defaultChecked={item?.taskStatusHistory.slice(-1)[0]?.status?.toLowerCase() === "open"}>Open</option>
+                          <option value="closed" defaultChecked={item?.taskStatusHistory.slice(-1)[0]?.status?.toLowerCase() === "open"}>Closed</option>
+                        </select>
+
+                        <Button onClick={() => HandleChangeStatus(item?._id)}>Change Status</Button>
+
+                        <div className="mt-4">
+                          <h5 className="text-xl mb-3 text-black font-bold">Task History</h5>
+
+                          <Button
+                            className="mt-2"
+                            onClick={() => exportToExcel([{
+                              taskName: item?.taskName,
+                              taskStatusHistory: item?.taskStatusHistory?.map(status => ({
+                                status: status?.status,
+                                timestamp: moment(status?.timestamp).format('dddd, MMMM Do YYYY'),
+                              }))
+                            }])}
+                          >
+                            Download as Excel
+                          </Button>
+                          {item?.taskStatusHistory?.map((status, index) => {
+                            return (
+                              <div className="flex justify-between items-center my-3" key={index}>
+                                <p>{status?.status}</p>
+                                <p>{moment(status?.timestamp).format('dddd, MMMM Do YYYY')}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </SheetDescription>
+                    </SheetHeader>
+                  </SheetContent>
+                </Sheet>
+              </TableCell>
+              <TableCell>
+                <Link href={`/task/${item?._id}`} className="text-red-500 underline">View Task Data</Link>
+              </TableCell>
+
+              <TableCell className="font-medium flex justify-start items-center">
+                <div className="flex justify-start items-center gap-5">
                   <Trash2 className="cursor-pointer" onClick={() => handleDeleteTask(item?._id)} />
                   <Dialog>
                     <DialogTrigger onClick={() => handleUpdateTask(item)}>
@@ -398,90 +511,6 @@ const Projects = () => {
                     </DialogContent>
                   </Dialog>
                 </div>
-              </TableCell>
-
-              <TableCell className="font-medium">
-                <Sheet>
-                  <SheetTrigger>Comment</SheetTrigger>
-                  <SheetContent className="w-[400px] sm:w-[540px]">
-                    <SheetHeader>
-                      <SheetTitle>Add Comment on Task</SheetTitle>
-                      <SheetDescription className="space-y-3">
-                        <input value={item?._id} hidden placeholder="TaskId" />
-                        <input value={item?.assignee?._id} hidden placeholder="UserId" />
-                        <Textarea
-                          value={commentMessage}
-                          onChange={(e) => setCommentMessage(e.target.value)}
-                          placeholder="Add a comment"
-                        />
-                        <Button
-                          onClick={() => handleAddComment(item?._id, item?.assignee?._id)}
-                        >
-                          Submit
-                        </Button>
-
-                        <h5 className="mt-5 text-xl font-bold text-black">All Comments</h5>
-                        <div className="mt-5">
-                          {item?.comments?.map((comment, index) => {
-                            return (
-                              <div className="my-3 relative w-full border cursor-pointer flex justify-between items-center border-gray-400 p-3 rounded-md" key={index}>
-                                <p>{comment?.commentMessage}</p>
-                                <p>{comment?.userId?.username}</p>
-                                <div onClick={() => handleDeleteTaskComment(comment?._id, item?._id)} className="absolute flex justify-center items-center rounded-md -top-2 -right-0 w-[20px] h-[20px] border-2 border-gray-500">
-                                  <FaDeleteLeft size={10} />
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </SheetDescription>
-                    </SheetHeader>
-                  </SheetContent>
-                </Sheet>
-              </TableCell>
-
-              <TableCell>
-                <Sheet>
-                  <SheetTrigger>Open</SheetTrigger>
-                  <SheetContent>
-                    <SheetHeader>
-                      <SheetTitle>Task History</SheetTitle>
-                      <SheetDescription className="space-y-3">
-                        <select onChange={(e) => setChangeStatus(e.target.value)}>
-                          <option value="open" defaultChecked={item?.taskStatusHistory.slice(-1)[0]?.status?.toLowerCase() === "open"}>Open</option>
-                          <option value="closed" defaultChecked={item?.taskStatusHistory.slice(-1)[0]?.status?.toLowerCase() === "open"}>Closed</option>
-                        </select>
-
-                        <Button onClick={() => HandleChangeStatus(item?._id)}>Change Status</Button>
-
-                        <div className="mt-4">
-                          <h5 className="text-xl mb-3 text-black font-bold">Task History</h5>
-
-                          <Button
-                            className="mt-2"
-                            onClick={() => exportToExcel([{
-                              taskName: item?.taskName,
-                              taskStatusHistory: item?.taskStatusHistory?.map(status => ({
-                                status: status?.status,
-                                timestamp: moment(status?.timestamp).format('dddd, MMMM Do YYYY'),
-                              }))
-                            }])}
-                          >
-                            Download as Excel
-                          </Button>
-                          {item?.taskStatusHistory?.map((status, index) => {
-                            return (
-                              <div className="flex justify-between items-center my-3" key={index}>
-                                <p>{status?.status}</p>
-                                <p>{moment(status?.timestamp).format('dddd, MMMM Do YYYY')}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </SheetDescription>
-                    </SheetHeader>
-                  </SheetContent>
-                </Sheet>
               </TableCell>
             </TableRow>
           ))}

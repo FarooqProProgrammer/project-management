@@ -51,9 +51,10 @@ const taskSchema = new mongoose.Schema(
             ref: "User",
             required: true,
         },
-        taskImages: [{
-            type: String,
-        }],
+        taskImages: {
+            type:Array,
+            required:true
+        },
         comments: [{
             userId: {
                 type: mongoose.Schema.Types.ObjectId,

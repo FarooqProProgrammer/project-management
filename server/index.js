@@ -18,6 +18,7 @@ import session from "express-session";
 import MongoStore from 'connect-mongo';  // Import connect-mongo
 import chartReportRouter from "./routes/chart-report.js"
 import ProjectSeverityRoutes from "./routes/project-severity-routes.js"
+import fileRouter from './routes/file-uploader.js';
 
 
 dotenv.config();
@@ -112,6 +113,7 @@ app.use('/api', taskRouter);
 app.use('/api', reportRouter);
 app.use('/api', chartReportRouter);
 app.use('/api', ProjectSeverityRoutes)
+app.use("/api/",fileRouter)
 
 app.get('/uploads/:filename', (req, res) => {
     const { filename } = req.params;
