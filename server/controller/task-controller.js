@@ -333,6 +333,25 @@ export const ChangeStatus = async (req, res) => {
         return res.status(400).json({ error: 'Task message (status) is required' });
       }
   
+      // Retrieve the task to check its current status
+      const task = await Task.findById(taskId);
+  
+      // If the task was not found
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+  
+      // Check the most recent status in the task's history
+      const mostRecentStatus = task.taskStatusHistory[task.taskStatusHistory.length - 1]?.status;
+  
+      // If the new taskMessage is the same as the most recent status (open or closed)
+      if (mostRecentStatus === taskMessage) {
+        return res.status(200).json({
+          message: `Task is already ${taskMessage}`,
+          taskStatusHistory: task.taskStatusHistory, // Send the current task status history
+        });
+      }
+  
       // Update task status and track the change in taskStatusHistory
       const result = await Task.updateOne(
         { _id: taskId }, // Find task by taskId
@@ -346,9 +365,9 @@ export const ChangeStatus = async (req, res) => {
         }
       );
   
-      // If the task wasn't found or updated
+      // If the task wasn't updated
       if (result.modifiedCount === 0) {
-        return res.status(404).json({ error: 'Task not found or status not changed' });
+        return res.status(404).json({ error: 'Task status not changed' });
       }
   
       // Respond with the updated task status history
@@ -363,3 +382,4 @@ export const ChangeStatus = async (req, res) => {
       return res.status(500).json({ error: 'An error occurred while updating the task status' });
     }
   };
+  

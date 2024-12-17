@@ -27,6 +27,9 @@ import { useDeleteTaskMutation, useGetAllTaskQuery } from "@/store/services/apiS
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
+import moment from "moment"
+import { CSVLink, CSVDownload } from "react-csv";
+
 
 const Projects = () => {
   const router = useRouter();
@@ -188,14 +191,14 @@ const Projects = () => {
 
 
     try {
-      
-      const  response = await axios.post(`http://localhost:3001/api/change-status/${id}`, { status: changeStatus })
+
+      const response = await axios.post(`http://localhost:3001/api/change-status/${id}`, { taskMessage: changeStatus })
 
       console.log(response.data)
 
 
     } catch (error) {
-      
+
     }
 
   }
@@ -386,6 +389,21 @@ const Projects = () => {
                         </select>
 
                         <Button onClick={() => HandleChangeStatus(item?._id)}>Change Status</Button>
+
+                        <div className="mt-4">
+                          <h5 className="text-xl mb-3 text-black font-bold">Task History</h5>
+
+                          <CSVDownload data={item?.taskStatusHistory} target="_blank" />
+
+                          {item?.taskStatusHistory?.map((status, index) => {
+                            return (
+                              <div className="flex justify-between items-center my-3" key={index}>
+                                <p>{status?.status}</p>
+                                <p>{moment(status?.timestamp).format('dddd, MMMM Do YYYY')}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
 
 
 
