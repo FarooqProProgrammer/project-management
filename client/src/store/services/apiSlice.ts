@@ -51,17 +51,7 @@ export const apiSlice = createApi({
     // Endpoint to fetch all tasks
     getAllTask: builder.query<any, void>({
       query: () => '/tasks',
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-        try {
-          dispatch(setLoading(true)); // Set loading to true when query starts
-          const { data } = await queryFulfilled;
-          dispatch(setTasks(data)); // Store the fetched tasks in the tasksSlice
-        } catch (err) {
-          console.error('Error fetching tasks:', err);
-        } finally {
-          dispatch(setLoading(false)); // Set loading to false when query ends
-        }
-      },
+    
     }),
 
     // Endpoint to delete a project

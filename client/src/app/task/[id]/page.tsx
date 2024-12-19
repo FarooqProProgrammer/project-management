@@ -46,7 +46,7 @@ const ViewTask = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+    <div className="md:max-w-4xl w-full mx-auto p-6 bg-white rounded-lg shadow-lg">
       <h2 className="text-2xl font-semibold text-gray-800 mb-6">Task Details</h2>
 
       {taskData ? (

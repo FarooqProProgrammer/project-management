@@ -31,6 +31,7 @@ import { useGetAllProductsQuery, useGetAllTaskQuery, useGetProjectCountsQuery, u
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import dynamic from "next/dynamic";
+import axios from "axios";
 
 const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -118,17 +119,12 @@ export default function Dashboard() {
   };
 
   const handleDownloadSummary = async () => {
-    try {
-      const reportSummary = await triggerSummary().unwrap();
-      if (reportSummary.fileUrl) {
-        console.log(reportSummary.fileUrl);
-        window.open(reportSummary.fileUrl, "_blank");
-      } else {
-        console.error("No file URL received in the response.");
-      }
-    } catch (error) {
-      console.error("Error fetching the summary:", error);
-    }
+    const response = await axios.get("http://localhost:3001/api/get-summary-report")
+
+    var create = document.createElement('a');
+    create.href = response.data.fileUrl;
+    create.target = "_blank";
+    create.click();
   };
 
   if (loading) {
@@ -143,12 +139,6 @@ export default function Dashboard() {
     
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="flex sm:max-w-lg justify-start items-center gap-4">
-        <Input type="date" onChange={(e) => setMonth(e.target.value)} />
-        <Input type="date"  value={endDate || ""} onChange={(e) => {
-          
-          setEndDate(e.target.value)
-        }} />
-        <Button onClick={handleDownloadReport}>Download Report</Button>
         <Button onClick={handleDownloadSummary}>Download Summary</Button>
       </div>
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
