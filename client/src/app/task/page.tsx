@@ -189,9 +189,11 @@ const Projects = () => {
 
     try {
       
-      const  response = await axios.post(`http://localhost:3001/api/change-status/${id}`, { status: changeStatus })
+      const  response = await axios.post(`http://localhost:3001/api/change-status/${id}`, { taskMessage: changeStatus })
 
       console.log(response.data)
+
+      refetch()
 
 
     } catch (error) {
@@ -225,9 +227,9 @@ const Projects = () => {
             <TableHead>Task Name</TableHead>
             <TableHead>Task Status</TableHead>
 
-            <TableHead>Actions</TableHead>
             <TableHead>Comment</TableHead>
             <TableHead>Ticket History</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -236,6 +238,90 @@ const Projects = () => {
               <TableCell className="font-medium">{item?.taskName}</TableCell>
               <TableCell className="font-medium">{item?.taskStatus}</TableCell>
 
+
+
+
+
+              <TableCell className="font-medium">
+                <Sheet>
+                  <SheetTrigger>Comment</SheetTrigger>
+                  <SheetContent className="w-[400px] sm:w-[540px]">
+                    <SheetHeader>
+                      <SheetTitle>Add Comment on Task</SheetTitle>
+                      <SheetDescription className="space-y-3">
+                        <input value={item?._id} hidden placeholder="TaskId" />
+                        <input value={item?.assignee?._id} hidden placeholder="UserId" />
+                        <Textarea
+                          value={commentMessage}
+                          onChange={(e) => setCommentMessage(e.target.value)}
+                          placeholder="Add a comment"
+                        />
+                        <Button
+                          onClick={() => handleAddComment(item?._id, item?.assignee?._id)} // Pass taskId and userId
+                        >
+                          Submit
+                        </Button>
+
+
+                        <h5 className="mt-5 text-xl font-bold text-black">All Comments</h5>
+                        <div className="mt-5">
+                          {item?.comments?.map((comment, index) => {
+                            return (
+
+                              <div className="my-3 relative w-full border cursor-pointer flex justify-between items-center border-gray-400 p-3 rounded-md">
+                                <p>{comment?.commentMessage}</p>
+                                <p>{comment?.userId?.username}</p>
+                                <div onClick={() => handleDeleteTaskComment(comment?._id, item?._id)} className="absolute flex justify-center items-center rounded-md -top-2 -right-0 w-[20px] h-[20px] border-2 border-gray-500">
+                                  <FaDeleteLeft size={10} />
+                                </div>
+                              </div>
+
+
+                            )
+                          })}
+                        </div>
+                      </SheetDescription>
+                    </SheetHeader>
+                  </SheetContent>
+                </Sheet>
+              </TableCell>
+
+              <TableCell>
+                <Sheet>
+                  <SheetTrigger>Open</SheetTrigger>
+                  <SheetContent>
+                    <SheetHeader>
+                      <SheetTitle>Task History</SheetTitle>
+                      <SheetDescription className="space-y-3">
+
+                        <select onChange={(e) => setChangeStatus(e.target.value)}>
+                          <option value="open">Open</option>
+                          <option value="closed">Closed</option>
+                        </select>
+
+                        <Button onClick={() => HandleChangeStatus(item?._id)}>Change Status</Button>
+
+                            <div className="h-full overflow-y-auto">
+                              {
+                                item?.taskStatusHistory?.map((item,index)=>{
+                                  return ( 
+                                    <div className="flex my-3 border border-gray-400 p-3 rounded-md justify-between items-center">
+                                      <p>{item?.status}</p>
+                                      <p>{item?.timestamp}</p>
+                                    </div>
+                                  )
+                                })
+                              }
+                            </div>
+
+
+                      </SheetDescription>
+                    </SheetHeader>
+                  </SheetContent>
+                </Sheet>
+
+              </TableCell>
+              
               <TableCell className="font-medium flex justify-center items-center">
                 <div className="flex justify-center items-center gap-5">
                   <Trash2 className="cursor-pointer" onClick={() => handleDeleteTask(item?._id)} />
@@ -323,77 +409,6 @@ const Projects = () => {
                     </DialogContent>
                   </Dialog>
                 </div>
-              </TableCell>
-
-
-
-
-              <TableCell className="font-medium">
-                <Sheet>
-                  <SheetTrigger>Comment</SheetTrigger>
-                  <SheetContent className="w-[400px] sm:w-[540px]">
-                    <SheetHeader>
-                      <SheetTitle>Add Comment on Task</SheetTitle>
-                      <SheetDescription className="space-y-3">
-                        <input value={item?._id} hidden placeholder="TaskId" />
-                        <input value={item?.assignee?._id} hidden placeholder="UserId" />
-                        <Textarea
-                          value={commentMessage}
-                          onChange={(e) => setCommentMessage(e.target.value)}
-                          placeholder="Add a comment"
-                        />
-                        <Button
-                          onClick={() => handleAddComment(item?._id, item?.assignee?._id)} // Pass taskId and userId
-                        >
-                          Submit
-                        </Button>
-
-
-                        <h5 className="mt-5 text-xl font-bold text-black">All Comments</h5>
-                        <div className="mt-5">
-                          {item?.comments?.map((comment, index) => {
-                            return (
-
-                              <div className="my-3 relative w-full border cursor-pointer flex justify-between items-center border-gray-400 p-3 rounded-md">
-                                <p>{comment?.commentMessage}</p>
-                                <p>{comment?.userId?.username}</p>
-                                <div onClick={() => handleDeleteTaskComment(comment?._id, item?._id)} className="absolute flex justify-center items-center rounded-md -top-2 -right-0 w-[20px] h-[20px] border-2 border-gray-500">
-                                  <FaDeleteLeft size={10} />
-                                </div>
-                              </div>
-
-
-                            )
-                          })}
-                        </div>
-                      </SheetDescription>
-                    </SheetHeader>
-                  </SheetContent>
-                </Sheet>
-              </TableCell>
-
-              <TableCell>
-                <Sheet>
-                  <SheetTrigger>Open</SheetTrigger>
-                  <SheetContent>
-                    <SheetHeader>
-                      <SheetTitle>Task History</SheetTitle>
-                      <SheetDescription className="space-y-3">
-
-                        <select onChange={(e) => setChangeStatus(e.target.value)}>
-                          <option value="open">Open</option>
-                          <option value="closed">Closed</option>
-                        </select>
-
-                        <Button onClick={() => HandleChangeStatus(item?._id)}>Change Status</Button>
-
-
-
-                      </SheetDescription>
-                    </SheetHeader>
-                  </SheetContent>
-                </Sheet>
-
               </TableCell>
             </TableRow>
           ))}

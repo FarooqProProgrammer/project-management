@@ -329,6 +329,8 @@ export const ChangeStatus = async (req, res) => {
       const { taskId } = req.params; // Extract taskId from request params
       const { taskMessage } = req.body; // Extract taskMessage (new status) from request body
   
+        console.log({taskMessage,taskId})
+
       if (!taskMessage) {
         return res.status(400).json({ error: 'Task message (status) is required' });
       }
