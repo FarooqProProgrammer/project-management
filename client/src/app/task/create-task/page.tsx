@@ -19,79 +19,113 @@ interface FormValues {
     project: string;
     module?: string;
     taskDescription: string;
-    taskImages: FileList;  // New field to hold image files
+    taskImages: string[];  // New field to hold image files
 }
 
 const CreateTask: React.FC = () => {
-    // State for loading, success, and error handling
-    const [isLoading, setIsLoading] = useState(false);
-    const [usersData, setUsersData] = useState<any>([]);
-    const [projectsData, setProjectsData] = useState<any>([]);
+   // State for loading, success, and error handling
+   const [isLoading, setIsLoading] = useState(false);
+   const [usersData, setUsersData] = useState<any>([]);
+   const [projectsData, setProjectsData] = useState<any>([]);
+   const [imagesUrl, setUrl] = useState<File[]>([]);  // Changed to File[] to hold actual files
+ 
+   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>();
+   const router = useRouter();
+ 
+   // Fetch users and projects when the component is mounted
+   useEffect(() => {
+     const fetchData = async () => {
+       try {
+         const usersResponse = await fetch('http://localhost:3001/api/auth/get-all-users');
+         const users = await usersResponse.json();
+         setUsersData(users);
+ 
+         const projectsResponse = await fetch('http://localhost:3001/api/get-all-project');
+         const projects = await projectsResponse.json();
+         setProjectsData(projects);
+       } catch (error) {
+         console.error('Error fetching data:', error);
+       }
+     };
+     fetchData();
+   }, []);
+ 
+   const HandleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      // Create a FormData object to send the selected files to the backend
+      const formData = new FormData();
+      Array.from(files).forEach((file) => {
+        formData.append("images", file);  // 'images' is the key for the file upload
+      });
 
-    const { register, handleSubmit, formState: { errors } } = useForm<FormValues>();
-    const router = useRouter();
+      try {
+        // Send the files to the server
+        const response = await fetch("http://localhost:3001/api/upload", {
+          method: "POST",
+          body: formData,
+        });
 
-    useEffect(() => {
-        // Fetch users and projects when the component is mounted
-        const fetchData = async () => {
-            try {
-                const usersResponse = await fetch('http://localhost:3001/api/auth/get-all-users');
-                const users = await usersResponse.json();
-                setUsersData(users);
-
-                const projectsResponse = await fetch('http://localhost:3001/api/get-all-project');
-                const projects = await projectsResponse.json();
-                setProjectsData(projects);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
-        fetchData();
-    }, []);
-
-    // Handle form submission
-    const onSubmit: SubmitHandler<FormValues> = async (data) => {
-        setIsLoading(true);
-    
-        // Create a FormData object to append both text data and file data
-        const formData = new FormData();
-        formData.append('taskName', data.taskName);
-        formData.append('priority', data.priority);
-        formData.append('taskStartDate', data.taskStartDate);
-        formData.append('taskEndDate', data.taskEndDate);
-        formData.append('taskStatus', data.taskStatus);
-        formData.append('assignee', data.assignee);
-        formData.append('project', data.project);
-        formData.append('module', data.module || '');
-        formData.append('taskDescription', data.taskDescription);
-        formData.append('taskImages', data.taskImages); // Append each file to FormData
-    
-        
-    
-        try {
-            const response = await fetch('http://localhost:3001/api/task', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'Accept': 'application/json',
-                },
-            });
-    
-            const result = await response.json();
-    
-            if (response.ok) {
-                // Redirect to the task list page after successful creation
-                router.push("/task");
-            } else {
-                console.error('Error creating task:', result);
-            }
-        } catch (error) {
-            console.error("Task creation failed", error);
-        } finally {
-            setIsLoading(false);
+        if (response.ok) {
+          // If the response is successful, parse the response and extract file URLs
+          const data = await response.json();
+          setUrl(data.fileUrls); // Store the returned URLs in state
+        } else {
+          console.error("Failed to upload images.");
         }
+      } catch (error) {
+        console.error("Error during image upload:", error);
+      }
+    }
+  };
+ 
+   // Handle form submission
+   const onSubmit: SubmitHandler<FormValues> = async (data) => {
+    setIsLoading(true);
+  
+    // Log the form data (optional for debugging)
+    console.log({ ...data, imagesUrl });
+  
+  
+  
+    // Send the files along with the necessary task data as a JSON payload
+    const payload = {
+      taskName: data.taskName,
+      priority: data.priority,
+      taskStartDate: data.taskStartDate,
+      taskEndDate: data.taskEndDate,
+      taskStatus: data.taskStatus,
+      assignee: data.assignee,
+      project: data.project,
+      module: data.module || '',
+      taskDescription: data.taskDescription,
+      taskImages:imagesUrl
     };
-    
+  
+    try {
+      const response = await fetch('http://localhost:3001/api/task', {
+        method: 'POST',
+        body: JSON.stringify(payload), // Send JSON data for the rest of the task
+        headers: {
+          'Content-Type': 'application/json', // Content type for JSON
+        },
+      });
+  
+      const result = await response.json();
+  
+      if (response.ok) {
+        // Redirect to the task list page after successful creation
+        router.push("/task");
+      } else {
+        console.error('Error creating task:', result);
+      }
+    } catch (error) {
+      console.error("Task creation failed", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
 
     return (
         <div className="sm:px-20">
@@ -212,7 +246,11 @@ const CreateTask: React.FC = () => {
                         type="file"
                         accept="image/*"
                         multiple
-                        {...register('taskImages', { required: 'Please upload images' })}
+                        onChange={HandleImageChange}
+                    
+
+
+                       
                     />
                     {errors.taskImages && <p className="text-red-500 text-sm">{errors.taskImages.message}</p>}
                 </div>

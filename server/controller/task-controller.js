@@ -8,10 +8,12 @@ import multer from "multer";
 // Create a new task
 export const createTask = async (req, res) => {
     try {
-        const { taskName, taskStartDate, taskEndDate, taskDescription, module, taskStatus, project, assignee } = req.body;
+        const { taskName, taskStartDate,taskImages, taskEndDate, taskDescription, module, taskStatus, project, assignee } = req.body;
 
         // Collect image URLs if files are uploaded
-        const taskImages = req.files ? req.files.map(file => `/uploads/task_images/${file.filename}`) : [];
+
+        console.log(req.body)
+       
 
         // Create new task with default status as 'open'
         const newTask = new Task({
@@ -44,7 +46,6 @@ export const createTask = async (req, res) => {
         });
     }
 };
-
 
 export const updateTask = async (req, res) => {
     try {
@@ -105,6 +106,8 @@ export const getTasksByStatus = async (req, res) => {
 
 export const getAllTasks = async (req, res) => {
     try {
+
+        console.log(req.cookies)
         // Fetch all tasks from the database
         const tasks = await Task.find().populate("assignee").populate("project").populate("comments.userId");
 
@@ -124,7 +127,7 @@ export const getAllTasks = async (req, res) => {
 export const getTaskById = async (req, res) => {
     try {
         const { taskId } = req.params;
-        const task = await Task.findById(taskId);
+        const task = await Task.findById(taskId).populate("assignee").populate("project");
 
         if (!task) {
             return res.status(404).json({ message: "Task not found." });
@@ -335,6 +338,25 @@ export const ChangeStatus = async (req, res) => {
         return res.status(400).json({ error: 'Task message (status) is required' });
       }
   
+      // Retrieve the task to check its current status
+      const task = await Task.findById(taskId);
+  
+      // If the task was not found
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+  
+      // Check the most recent status in the task's history
+      const mostRecentStatus = task.taskStatusHistory[task.taskStatusHistory.length - 1]?.status;
+  
+      // If the new taskMessage is the same as the most recent status (open or closed)
+      if (mostRecentStatus === taskMessage) {
+        return res.status(200).json({
+          message: `Task is already ${taskMessage}`,
+          taskStatusHistory: task.taskStatusHistory, // Send the current task status history
+        });
+      }
+  
       // Update task status and track the change in taskStatusHistory
       const result = await Task.updateOne(
         { _id: taskId }, // Find task by taskId
@@ -348,9 +370,9 @@ export const ChangeStatus = async (req, res) => {
         }
       );
   
-      // If the task wasn't found or updated
+      // If the task wasn't updated
       if (result.modifiedCount === 0) {
-        return res.status(404).json({ error: 'Task not found or status not changed' });
+        return res.status(404).json({ error: 'Task status not changed' });
       }
   
       // Respond with the updated task status history
@@ -365,3 +387,4 @@ export const ChangeStatus = async (req, res) => {
       return res.status(500).json({ error: 'An error occurred while updating the task status' });
     }
   };
+  

@@ -106,7 +106,9 @@ const Login: React.FC = () => {
                     <div className="grid w-full max-w-sm items-center gap-1.5">
                         <Button type="submit">Sign In</Button>
                     </div>
+                    <Link href="/auth/forgot-password">Forgot password</Link>
                     <Link href="/auth/signup">Signup</Link>
+
                 </form>
             </div>
         </div>

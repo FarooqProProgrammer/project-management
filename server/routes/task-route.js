@@ -35,7 +35,7 @@ const upload = multer({
 }).array('taskImages',5);  
 
 // Define Routes
-taskRouter.post('/task', upload, createTask);  // Using multer upload middleware in route
+taskRouter.post('/task',  createTask);  // Using multer upload middleware in route
 taskRouter.put('/update-task/:taskId', updateTask);
 taskRouter.post('/task/:id', deleteTask);
 taskRouter.get("/task/status/:status", getTasksByStatus);
